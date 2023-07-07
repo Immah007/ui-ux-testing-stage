@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poiret+One&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Alata&display=swap');
+   
+      body {width: 100%; margin: 0; padding: 0; height: 100%; box-sizing: border-box; margin: 0; padding-bottom: 39px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #dbe9f4; text-align: center; }
+            #header { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: relative; top: 0px;  gap: 12px; width: 100%; left: 0; right: 0; display: flex; align-items: cente; height: 7rem; box-sizing: border-box; backdrop-filter: blur(10px); padding-right:8px; padding-left: 8px; justify-content: space-between;}
+            h1{font-size: 4rem; margin: 0; padding: 0; font-family: 'Poiret One', cursive; background: redd; }       
+            span{font-family: 'Alata', sans-serif; font-weight: light;}
+            
+            .topButtonHolder{
+                height: 70%; aspect-ratio: 1/1; background: redd; display: flex; align-items: center; justify-content: center; align-self: center;
+            }
+            .topBtn{
+             height: 95%; aspect-ratio: 1/1; border: none; background: none;
+            }
+      .topButtonHoldeRt{
+                height: 70%; aspect-ratio: 2.5/1; background: redd; display: flex; align-items: center; justify-content: space-between; align-self: center;
+            }
+        #queryArea {
+            width: 100%; min-height: 40px; box-sizing: border-box; padding: 12px; font-size: 32px; background: rgb(200,200,200,.4); margin: 0 auto; margin-top: 5px; margin-bottom: 5px; text-align: left;
+        }   
+            
+      #responseArea{ 
+          width: 95%; min-height: 70px; box-sizing: border-box; padding: 12px; border-radius: 7px; font-size: 32px; border: 1px solid blue; background: rgb(190, 190, 225, .1); margin: 0 auto; text-align: left; margin-top: 5px; margin-bottom: 5px; 
+       }
+
+     #reactionArea{ width: 100%; height: 2.2rem; background: redd; margin-top: 10px; display: flex; justify-content: flex-end; gap: 2.2rem;}
+               #copyArea{ width: 95%; height: 2.2rem; background: redd; margin-top: 5px; display: flex; justify-content: flex-end; gap: 1.3rem; margin: 0 auto; }
+     
+     .createdIconHold{
+         height: 100%; aspect-ratio: 1/1; background: none; font-size: 24px; border: none; display: flex; align-items: center; justify-content: center; 
+     }
+
+      #text {
+      font-size: 24px; left: 0;
+      font-family: monospace; 
+    }
+ h2{ font-weight: lighter; max-width: 75%; margin: 0 auto;}
+#cursor{ animation: blinker .7s linear infinite paused; }
+@keyframes blinker{
+     0%{color: black;}
+     25%{color: black;}
+     26%{color: transparent;}
+     75%{color: transparent;}
+     76%{color: black;}     
+     100%{color: black;}
+}
+
+      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 4px;  gap: 12px; width: 100%; left: 0; right: 0; display: flex; align-items: center; height: 3.7rem; box-sizing: border-box; backdrop-filter: blur(10px); padding-right:8px; z-index: 1; padding-left: 10px; justify-content: space-evenly; text-align: center;}
+      #input { font-size: 24px; border: none; box-sizing: border-box; padding: 1rem; word-break: break-word; height: 100%; background-color: rgba(255,255,255,0.8); flex-grow: 1;   box-shadow: 1px 2px 4px 1px black; border-radius: 2rem; margin: 0.rem; padding-left: 1rem; align-self: center;}
+      #input:focus { outline: none; }
+      #form > button {background-color: #00bfff; width: 65px; height: 65px;  box-shadow: 2px 2px 4px 0px black;  display: flex; align-items: center; justify-content: center; text-align: center;
+               border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 50%; outline: none; color: #fff; }
+
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages > li { padding: 0.5rem 1rem; }
+      #messages > li:nth-child(odd) { background: #efefef; }
+      .inputhold{height: 90%; flex-grow: 1; position: relative; background: redd; display: flex; justify-content: center; align-items: center;}
+
+
+.icon{height: 100%; aspect-ratio: 1/1; background: none; border-radius: 50%;}
+ .iconbutton{width: 100%; height: 100%; border-radius: 50%; background: none; color: black; border: none; display: flex; align-items: center; justify-content: center; }
+
+
+ @media only screen and (max-width: 997px) and (orientation: portrait) {
+          
+           #form{
+               height: 7.3rem; 
+               bottom: 1.5rem;
+           }   
+         svg{
+             transform: scale(2);
+         }
+         #input{ 
+                 border-radius: 4rem; font-size: 32px;
+         }
+         
+         #form > button{ width: 130px; height: 130px;} 
+         
+      }
+
+    #darkMode{display: inline-block; }
+
+    </style>
+  </head>
+  <body>
+      <div id="header">
+          <div class="topButtonHolder">
+              <button class="topBtn" onclick="createNewDiv()">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-person" viewBox="0 0 16 16"> <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/> </svg>
+
+
+
+
+
+
+
+              </button>
+          </div>
+          <h1>ask.<span style="color: #00bfff;" id="AI">AI</span></h1>
+          <div class="topButtonHolder">
+             <!-- <button class="topBtn" >
+                  <svg id="darkMode" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" id="colorChangr" class="bi bi-moon-stars" viewBox="0 0 16 16"> <path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278zM4.858 1.311A7.269 7.269 0 0 0 1.025 7.71c0 4.02 3.279 7.276 7.319 7.276a7.316 7.316 0 0 0 5.205-2.162c-.337.042-.68.063-1.029.063-4.61 0-8.343-3.714-8.343-8.29 0-1.167.242-2.278.681-3.286z"/> <path d="M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387a1.734 1.734 0 0 0-1.097 1.097l-.387 1.162a.217.217 0 0 1-.412 0l-.387-1.162A1.734 1.734 0 0 0 9.31 6.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387a1.734 1.734 0 0 0 1.097-1.097l.387-1.162zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.156 1.156 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.156 1.156 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732L13.863.1z"/> </svg>
+
+
+              </button> -->
+              
+              <button class="topBtn" id="colorChanger" onclick="changeTheme()">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-stars" viewBox="0 0 16 16"> <path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828l.645-1.937zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.734 1.734 0 0 0 4.593 5.69l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.69A1.734 1.734 0 0 0 2.31 4.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.734 1.734 0 0 0 3.407 2.31l.387-1.162zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.156 1.156 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.156 1.156 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732L10.863.1z"/> </svg>
+              </button>  
+          </div> 
+        </div>  
+
+<h2><span id="text"></span><span id="cursor">|</span></h2>
+
+<div id="responseArea">
+
+ <div id="reactionArea">
+        <div class="createdIconHold"></div> 
+         <div class="createdIconHold"></div>
+         <div class="createdIconHold"></div> 
+        
+        </div>
+
+</div>
+
+
+    <div id="form" action="">
+
+      <div class="inputhold" > 
+       
+      <input id="input" type="text" placeholder="Ask something..." autocomplete="off" ></input>
+       
+      </div> 
+            <button onclick="sendMsg()" id="sendBtn"> 
+              <svg id="micSvg" style="display: inline-block;" xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-mic-fill" viewBox="0 0 16 16"> <path d="M5 3a3 3 0 0 1 6 0v5a3 3 0 0 1-6 0V3z"/> <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5z"/> </svg>
+               <!--send svg to go here-->
+               <svg fill="currentColor" id="sendIcon" width="45" height="45" style="display:none" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><title>ionicons-v5-q</title><path d="M16,464,496,256,16,48V208l320,48L16,304Z"/></svg> 
+
+            </button>
+    </div>
+    <script>
+    
+    
+    
+   // });
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    alert (" KIND NOTE; \n1.This is a module for test of UX and functionality of the transcription AI engine only\n2.This module has been trained on less than 100 tokens of data for language transcription, and the real AI ro run on this UX is so far trained on 3.7 billion tokens of data and counting. Therefore, the module you will interact with is just for testing purposes and as such, may not contain superb AI-like characteristics\n3.Please report any kind of biased, inappropriate or negative responses for enhanced performance");
+    let dummyText = " Here's a random dummy text for youLorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce in lacus eleifend, gravida velit non, rhoncus tellus. Sed eu orci et arcu volutpat malesuada. Praesent condimentum dui sit amet mauris finibus, eu aliquam nunc posuere. Nulla facilisi. Nam sagittis metus nec condimentum semper. Morbi nec ullamcorper metus. Sed tristique dolor quis neque iaculis, sed maximus nulla aliquet. Vestibulum in nisl eleifend, tristique lectus a, semper nunc. Sed laoreet metus velit, eget luctus diam consequat sed. Pellentesque mollis fermentum justo, a varius elit semper sit amet. Curabitur auctor ipsum non est euismod tempus. Donec bibendum gravida mi, nec suscipit dolor tincidunt at. Phasellus in ipsum a ante aliquam eleifend.Vestibulum ante ipsum primis  faucibus orci luctus et ultrices posuere cubilia Curae; Suspendisse at neque nunc. Integer non diam eget ipsum rhoncus facilisis vitae in nulla. Sed sollicitudin ipsum in tellus elementum vestibulum. Curabitur faucibus eleifend velit, ut sollicitudin ante scelerisque id. Phasellus vitae ex at libero facilisis tristique. Morbi et enim feugiat, aliquet nisl eu, pulvinar quam. Nulla vel malesuada massa. Suspendisse a urna tincidunt, vestibulum tellus ac, semper erat. Phasellus luctus odio vel mauris convallis, vel fermentum tortor tincidunt. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed venenatis consectetur dui sit amet varius.Proin consequat eleifend pulvinar. Donec hendrerit varius libero, sed condimentum mi suscipit Sed faucibus semper neque, a feugiat magna volutpat . Nam ac ultrices sem. Duis accumsan venenatis enim, vitae iaculis felis commodo et. Maecenas convallis dapibus quam, et eleifend mauris auctor sed. Fusce vel cursus mauris, vitae mattis ex. Cras eget risus tortor. In a lectus id velit commodo posuere. Curabitur sed tincidunt urna, ut ultrices arcu. Nam sed rutrum sem, ut tristique odio. Suspendisse congue, est et consequat ullamcorper, erat massa laoreet nisi, vitae consequat turpis felis eu nisi. Quisque non sollicitudin ligula, eu fringilla felis. Vestibulum mollis lorem nec tellus tempor congue.";
+    
+    
+    
+    let questionResponse = "Antihistamines are a class of medications used to treat allergic reactions, hay fever, and various other conditions caused by excessive histamine release in the body. Histamine is a substance produced by the body in response to allergens, and it triggers symptoms such as itching, sneezing, runny nose, and watery eyes. Antihistamines work by blocking the effects of histamine, thereby reducing these symptoms. Here are a few examples of antihistamines: \n 1. Diphenhydramine (Benadryl): It is commonly used to relieve symptoms of allergies, hay fever, and the common cold. It can also have sedative effects and is sometimes used as a sleep aid.\n 2. Loratadine (Claritin): It is a non-drowsy antihistamine used to treat allergic conditions such as hay fever, hives, and itching.\n 3. Cetirizine (Zyrtec): It is an antihistamine that provides relief from symptoms of seasonal allergies, allergic rhinitis, and hives.\n 4. Fexofenadine (Allegra): It is another non-drowsy antihistamine used to treat symptoms of seasonal allergies and chronic idiopathic urticaria (hives).\n 5. Desloratadine (Clarinex): It is an antihistamine that helps alleviate symptoms of seasonal allergies and allergic rhinitis.\n 6. Levocetirizine (Xyzal): It is an antihistamine used for the treatment of allergic rhinitis, hives, and other allergic conditions.\n 7. Cetirizine/Pseudoephedrine (Zyrtec-D): This is a combination medication that combines an antihistamine (cetirizine) with a decongestant (pseudoephedrine) to relieve nasal congestion associated with allergies.\n It is important to note that while antihistamines can provide relief for allergy symptoms, they may cause drowsiness in some individuals. Always follow the instructions and dosage recommendations provided by your healthcare professional or the medication packaging."
+    
+    
+    
+    
+    let body = document.querySelector("body");
+    
+    let blink = document.getElementById("cursor");
+    const text1 = "Hello, welcome to AskieAI.";
+    const text2 = "AskAI was created in the city of Nairobi."
+    const text3 = "It is an AI study assistant designed to help you with your revision, classwork and personal studies.";
+    const text4 = "AskAI is a pre-trained module that grows its capabilities by supervised learning, unsupervised learning and cloud based 'neural networks'.";
+    const text5 = "This is an open source and free research preview for everybody.";
+    
+let index = 0;
+let deleting = false;
+let displayTexts = [text1, text2, text3,text4, text5];
+let displayTextIndex = 0;
+// alert(displayTexts[2])
+function typeText() {
+
+  const element = document.getElementById("text");
+
+   const text = displayTexts[displayTextIndex];
+  if (deleting) { blink.style.animationPlayState = "running";
+    element.textContent = text.slice(0, index);
+    index--;
+
+    if (index < 0) { 
+      deleting = false;
+    }
+  } else {
+    blink.style.animationPlayState = "running";
+    setTimeout(function(){element.textContent = text.slice(0, index + 1);
+    index++;}, 2700)
+
+    if (index === text.length) {
+      
+      blink.style.animationPlayState = "running";
+      setTimeout(function(){deleting = true; }, 1900)
+    }
+  }
+
+  const typingSpeed = deleting ? 90 : 100; // Speed of typing and deletion
+  setTimeout(typeText, typingSpeed)
+
+
+   if(deleting && index==0 ){displayTextIndex++}
+   if(displayTextIndex > 4){ displayTextIndex = 0};
+
+      }
+typeText();
+
+          let queryArea = document.getElementById("queryArea");
+    
+    
+        let prompt = document.getElementById("input");
+        let logo = document.getElementById("AI");
+        let mic = document.getElementById("sendBtn");
+        let micSvg = document.getElementById("micSvg");
+        let sendIcon = document.getElementById("sendIcon");
+        let background = document.querySelector("body");
+        let colorChanger = document.getElementById("colorChanger");
+        
+        function hideMic(){sendIcon.style.display = "inline-block"; micSvg.style.display = "none" }
+     
+        let colorIdentity = 0;
+        function changeTheme(){
+            logo.style.transition = "2s";
+            colorChanger.style.transition = "2s";
+            mic.style.transition = "2s";
+
+            if(colorIdentity == 0){ 
+                
+            logo.style.color = "red";
+            
+            mic.style.backgroundColor = "red";
+            
+            colorChanger.style.color = "red";
+            colorIdentity = 1;    
+            }
+            else if(colorIdentity===1){
+                            
+            logo.style.color = "pink";
+            mic.style.backgroundColor = "pink";
+            colorChanger.style.color = "pink";
+            colorIdentity = 2;        
+           
+           }
+           else if(colorIdentity===2){
+                            
+            logo.style.color = "green";
+            mic.style.backgroundColor = "green";
+            colorChanger.style.color = "green";
+            colorIdentity = 3;        
+           
+           }
+           else if(colorIdentity===3){
+                            
+            logo.style.color = "lightgreen";
+            mic.style.backgroundColor = "lightgreen";
+            colorChanger.style.color = "lightgreen";
+            colorIdentity = 4;        
+           
+           }
+           else if(colorIdentity===4){
+                            
+            logo.style.color = "blue";
+            mic.style.backgroundColor = "blue";
+            colorChanger.style.color = "blue";
+            colorIdentity = 5;        
+           
+           }
+           else if(colorIdentity===5){
+                            
+            logo.style.color = "gold";
+            mic.style.backgroundColor = "gold";
+            colorChanger.style.color = "gold";
+            colorIdentity = 6;        
+           
+           }
+           
+           else{
+                        
+            logo.style.color = "#00bfff";
+            mic.style.backgroundColor = "00bfff";
+            colorChanger.style.color = "#00bfff";
+            colorIdentity = 0;    
+           }
+        }
+        
+        // Get the input to activate onky with a  value
+
+// Add an event listener to the input
+prompt.addEventListener('input', function() {
+  // Check if the input value is not empty
+  if (input.value.trim() !== '') {
+    // Enable the button
+     hideMic()
+  } else {
+    // Disable the button
+    sendIcon.style.display = "none";
+    micSvg.style.display = "inline-block"
+  }
+});
+
+        //CREATE SVG ICONS...
+        
+        
+        
+        const regenerateResponseSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+// Set the attributes of the SVG element
+regenerateResponseSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+regenerateResponseSvg.setAttribute("viewBox", "0 -960 960 960");
+regenerateResponseSvg.setAttribute("width", "24");
+regenerateResponseSvg.setAttribute("height", "24");
+// Create a path element
+const regeneratePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+// Set the attributes of the path element
+regeneratePath.setAttribute("d","M196-331q-20-36-28-72.5t-8-74.5q0-131 94.5-225.5T480-798h43l-80-80 39-39 149 149-149 149-40-40 79-79h-41q-107 0-183.5 76.5T220-478q0 29 5.5 55t13.5 49l-43 43ZM476-40 327-189l149-149 39 39-80 80h45q107 0 183.5-76.5T740-479q0-29-5-55t-15-49l43-43q20 36 28.5 72.5T800-479q0 131-94.5 225.5T480-159h-45l80 80-39 39Z"
+
+
+
+
+);
+regeneratePath.setAttribute("fill", "currentColor");
+// Append the path to the SVG element
+regenerateResponseSvg.appendChild(regeneratePath);
+
+        
+        
+        
+        
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+// Set the attributes of the SVG element
+svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+svg.setAttribute("viewBox", "0 0 512 512");
+svg.setAttribute("width", "20");
+svg.setAttribute("height", "20");
+// Create a path element
+const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+// Set the attributes of the path element
+path.setAttribute("d","M323.8 477.2c-38.2 10.9-78.1-11.2-89-49.4l-5.7-20c-3.7-13-10.4-25-19.5-35l-51.3-56.4c-8.9-9.8-8.2-25 1.6-33.9s25-8.2 33.9 1.6l51.3 56.4c14.1 15.5 24.4 34 30.1 54.1l5.7 20c3.6 12.7 16.9 20.1 29.7 16.5s20.1-16.9 16.5-29.7l-5.7-20c-5.7-19.9-14.7-38.7-26.6-55.5c-5.2-7.3-5.8-16.9-1.7-24.9s12.3-13 21.3-13L448 288c8.8 0 16-7.2 16-16c0-6.8-4.3-12.7-10.4-15c-7.4-2.8-13-9-14.9-16.7s.1-15.8 5.3-21.7c2.5-2.8 4-6.5 4-10.6c0-7.8-5.6-14.3-13-15.7c-8.2-1.6-15.1-7.3-18-15.2s-1.6-16.7 3.6-23.3c2.1-2.7 3.4-6.1 3.4-9.9c0-6.7-4.2-12.6-10.2-14.9c-11.5-4.5-17.7-16.9-14.4-28.8c.4-1.3 .6-2.8 .6-4.3c0-8.8-7.2-16-16-16H286.5c-12.6 0-25 3.7-35.5 10.7l-61.7 41.1c-11 7.4-25.9 4.4-33.3-6.7s-4.4-25.9 6.7-33.3l61.7-41.1c18.4-12.3 40-18.8 62.1-18.8H384c34.7 0 62.9 27.6 64 62c14.6 11.7 24 29.7 24 50c0 4.5-.5 8.8-1.3 13c15.4 11.7 25.3 30.2 25.3 51c0 6.5-1 12.8-2.8 18.7C504.8 238.3 512 254.3 512 272c0 35.3-28.6 64-64 64l-92.3 0c4.7 10.4 8.7 21.2 11.8 32.2l5.7 20c10.9 38.2-11.2 78.1-49.4 89zM32 384c-17.7 0-32-14.3-32-32V128c0-17.7 14.3-32 32-32H96c17.7 0 32 14.3 32 32V352c0 17.7-14.3 32-32 32H32z"
+);
+path.setAttribute("fill", "currentColor");
+// Append the path to the SVG element
+svg.appendChild(path);
+
+
+
+
+const likesvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+// Set the attributes of the SVG element
+likesvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+likesvg.setAttribute("viewBox", "0 0 512 512");
+likesvg.setAttribute("width", "32");
+likesvg.setAttribute("height", "32");
+// Create a path element
+const likepath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+// Set the attributes of the path element
+likepath.setAttribute("d", "M323.8 34.8c-38.2-10.9-78.1 11.2-89 49.4l-5.7 20c-3.7 13-10.4 25-19.5 35l-51.3 56.4c-8.9 9.8-8.2 25 1.6 33.9s25 8.2 33.9-1.6l51.3-56.4c14.1-15.5 24.4-34 30.1-54.1l5.7-20c3.6-12.7 16.9-20.1 29.7-16.5s20.1 16.9 16.5 29.7l-5.7 20c-5.7 19.9-14.7 38.7-26.6 55.5c-5.2 7.3-5.8 16.9-1.7 24.9s12.3 13 21.3 13L448 224c8.8 0 16 7.2 16 16c0 6.8-4.3 12.7-10.4 15c-7.4 2.8-13 9-14.9 16.7s.1 15.8 5.3 21.7c2.5 2.8 4 6.5 4 10.6c0 7.8-5.6 14.3-13 15.7c-8.2 1.6-15.1 7.3-18 15.1s-1.6 16.7 3.6 23.3c2.1 2.7 3.4 6.1 3.4 9.9c0 6.7-4.2 12.6-10.2 14.9c-11.5 4.5-17.7 16.9-14.4 28.8c.4 1.3 .6 2.8 .6 4.3c0 8.8-7.2 16-16 16H286.5c-12.6 0-25-3.7-35.5-10.7l-61.7-41.1c-11-7.4-25.9-4.4-33.3 6.7s-4.4 25.9 6.7 33.3l61.7 41.1c18.4 12.3 40 18.8 62.1 18.8H384c34.7 0 62.9-27.6 64-62c14.6-11.7 24-29.7 24-50c0-4.5-.5-8.8-1.3-13c15.4-11.7 25.3-30.2 25.3-51c0-6.5-1-12.8-2.8-18.7C504.8 273.7 512 257.7 512 240c0-35.3-28.6-64-64-64l-92.3 0c4.7-10.4 8.7-21.2 11.8-32.2l5.7-20c10.9-38.2-11.2-78.1-49.4-89zM32 192c-17.7 0-32 14.3-32 32V448c0 17.7 14.3 32 32 32H96c17.7 0 32-14.3 32-32V224c0-17.7-14.3-32-32-32H32z"
+);
+likepath.setAttribute("fill", "currentColor");
+likesvg.appendChild(likepath);
+
+
+
+
+const copysvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+// Set the attributes of the SVG element
+copysvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+copysvg.setAttribute("viewBox", "0 -960 960 960");
+copysvg.setAttribute("width", "24");
+copysvg.setAttribute("height", "24");
+// Create a path element
+const copypath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+// Set the attributes of the path element
+copypath.setAttribute("d", "M180-81q-24 0-42-18t-18-42v-603h60v603h474v60H180Zm120-120q-24 0-42-18t-18-42v-560q0-24 18-42t42-18h440q24 0 42 18t18 42v560q0 24-18 42t-42 18H300Zm0-60h440v-560H300v560Zm0 0v-560 560Z"
+
+
+);
+copypath.setAttribute("fill", "currentColor");
+copysvg.appendChild(copypath);
+
+           
+        //END OF SVG ICONS...
+        
+        function sendMsg(){
+            
+                let userInput = prompt.value;
+                let queryArea = document.createElement("div");
+                    queryArea.setAttribute("id","queryArea");
+                    queryArea.innerText=userInput;
+                     
+                                         
+               let copyArea = document.createElement("div");
+                   copyArea.setAttribute("id","copyArea");
+                   
+                   let regenerateIcon = document.createElement("button");
+                      regenerateIcon.setAttribute("class","createdIconHold");
+                      regenerateIcon.setAttribute("id", "regenerate")
+                //    const buttons = document.querySelectorAll('.createdIconHold'); 
+                    regenerateIcon.addEventListener('click',() => { 
+                        
+                        let thisHolder = regenerateIcon.parentNode;
+                         let thisResponse = thisHolder.parentNode;
+                             alert("This div will regenerate the response: " + thisResponse.innerText);
+                        
+                      //  alert("This will regenerate the response...")
+                        
+                    });
+              //        buttons.forEach(button => { regenerateIcon.addEventListener('click', regenerateResponse())}); 
+                  
+                   copyArea.appendChild(regenerateIcon); 
+                   regenerateIcon.appendChild(regenerateResponseSvg.cloneNode(true));
+                   queryArea.appendChild(copyArea);
+                     
+                    body.appendChild(queryArea);  
+              
+                    
+                    
+          const greetings = ['hello', 'hi', 'hey', 'greetings', 'hola'];
+          const additionResponse = ['Thanks for participating in my training', 'How may I help you today?', 'How can I assist you today?', 'Feel free to let me know how I can further assist']
+          const apologies = ['I apologise', 'I am sorry', 'My apologies', 'Oops, I apologise']
+          const questions = ["who"];
+          const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+          const randomadditionResponse = additionResponse[Math.floor(Math.random() * additionResponse.length)];
+          const randomApology = apologies[Math.floor(Math.random() * apologies.length)];
+          let generatedText = " ";
+          
+              const lowercaseInput = userInput.toLowerCase(); 
+              
+
+              if (greetings.includes(lowercaseInput)) {  generatedText=randomGreeting + ". "+ randomadditionResponse; }
+              else if(questions.includes(lowercaseInput)){generatedText="I am AzureAI."}
+              else { generatedText= randomApology+ ". At this early training stage, I still can't understand what you meant by " +"\""+ prompt.value + "\". " + "Please note that you are taking part in the earliest stages of my training. As an AI module in stage 1/12 of training, how accurately do you think I respond to greetings?"; }
+
+             let responseArea = document.createElement("div");
+                 responseArea.setAttribute("id", "responseArea")
+             
+             let reactionArea = document.createElement("div");
+                 reactionArea.setAttribute("id", "reactionArea")
+                 reactionArea.setAttribute("class", "new")   
+             //   newDiv.style.width = "50%";
+             //   newDiv.style.background = "blue"
+             //   newDiv.style.height = "95px";
+                
+                  let likeIcon = document.createElement("button");
+                      likeIcon.setAttribute("class","createdIconHold");
+                      likeIcon.setAttribute("id", "like");
+                      likeIcon.appendChild(likesvg.cloneNode(true)); 
+                      likeIcon.addEventListener('click', () => {
+                          
+                          let thisHolder = likeIcon.parentNode;
+                         let thisResponse = thisHolder.parentNode;
+                             alert("This function will like this response: " + thisResponse.innerText);
+                       //   likeResponse()
+                          
+                      })
+                     
+                      
+                  let copyButton = document.createElement("button");
+                      copyButton.setAttribute("class","createdIconHold");
+                      copyButton.setAttribute("id", "copy");
+                      copyButton.appendChild(copysvg.cloneNode(true))
+                      copyButton.addEventListener("click",() => {
+                          
+                          let thisHolder = copyButton.parentNode;
+                         let thisResponse = thisHolder.parentNode;
+                         
+                         
+                       //  function copyTextToClipboard(elementId) {
+                       const textarea = document.createElement('textarea');
+                     textarea.value = thisResponse.innerText;
+                      document.body.appendChild(textarea);
+                    textarea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textarea);
+                        //}
+
+                      // copyTextToClipboard('myDiv');
+
+                         
+                         
+                             alert("Response Copied successfully");
+
+                          
+                      })
+                      
+                  let dislikeIcon = document.createElement("button");
+                      dislikeIcon.setAttribute("class","createdIconHold");
+                      dislikeIcon.setAttribute("id", "dislike");
+                      dislikeIcon.appendChild(svg.cloneNode(true)); 
+                      dislikeIcon.addEventListener('click',() => {
+                          
+                         let thisHolder = dislikeIcon.parentNode;
+                         let thisResponse = thisHolder.parentNode;
+                             alert("This will dislike: " + thisResponse.innerText);
+                                
+                          
+                         // dislikeResponse();
+                          
+                      }); 
+                      
+             reactionArea.appendChild(likeIcon);
+             reactionArea.appendChild(copyButton);
+             reactionArea.appendChild(dislikeIcon);
+             
+             responseArea.appendChild(reactionArea)
+             body.appendChild(responseArea);
+                  
+             //    responseArea.innerText = generatedText; (RESPONSE WITHOUT GPT-LIKE SIMULATIOM)
+                 
+                   //SIMULATE CHAT GPT WORD TYPING....
+                    function typeText(elementId, text, delay, callback) {
+  //var element = document.getElementById(elementId);
+  var index = 0;
+
+  function typeNextLetter() {
+    responseArea.textContent += text[index];
+    index++;
+
+    if (index < text.length) {
+      setTimeout(typeNextLetter, delay);
+    } else {
+      if (callback && typeof callback === 'function') {
+        callback();
+      }
+    }
+  }
+
+  typeNextLetter();
+}
+
+// Example usage
+//var targetElementId = "myDiv";
+var textToType = generatedText;
+var typingDelay = 2; // milliseconds
+
+function typingComplete() {
+  
+  responseArea.appendChild(reactionArea);
+  
+  // responseArea.appendChild(newDiv)
+}
+
+typeText(responseArea, textToType, typingDelay, typingComplete);
+
+
+                   //...THE END.
+                   
+                   
+
+                   
+          //       reactionArea.appendChild(likeIcon.cloneNode(true));
+              //    reactionArea.appendChild(copyButton.cloneNode(true));
+               /*   reactionArea.appendChild(dislikeIcon.cloneNode(true)); */
+
+                  body.appendChild(responseArea);
+                  
+              
+            prompt.value = null; 
+            sendIcon.style.display = "none"; 
+            micSvg.style.display = "inline-block"
+        }
+    //SET UP THE REGENERATE RESPONSE FUNCTIONALITY...
+    // Iterate over each button and add a click event listener
+function regenerateResponse(){
+        // Get the parent div of the clicked button
+        const parentDiv = regenerateIcon.parentElement; // Generate a random color
+        const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16); // Change the background color of the parent div 
+        parentDiv.style.backgroundColor = randomColor; };   
+    
+    
+    
+    //SET UP THE LIKE ICON FUNCTIONALITY...
+      function likeResponse(){
+          alert("This will LIKE the reponse.")
+      }
+    //SET UP THE COPY ICON FUNCTIONALITY...
+      function copyResponse(){
+          alert("The response has been copied successfully.")
+      }
+    //SET UP THE DISLIKE FUNCTIONALITY...
+     function dislikeResponse(){
+          alert("This will DISLIKE the generated reponse.")
+      }
+      
+      
+      
+      
+      
+      
+      
+      function changeColor(event) {
+      var clickedButton = event.target;
+      var div = clickedButton.parentNode;
+      div.style.backgroundColor = getRandomColor();
+    }
+
+    function getRandomColor() {
+      var letters = '0123456789ABCDEF';
+      var color = '#';
+      for (var i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+
+    var container = document.querySelector("body");
+    container.addEventListener("click", function(event) {
+      if (event.target.classList.contains("createdIconHold")) {
+        changeColor(event);
+      } }); 
+    </script>
+  </body>
+</html>
